@@ -73,24 +73,73 @@ hithere
 
 ```
 [appuser@broker ~]$ kafka-console-producer --bootstrap-server :9092 --topic hithere
->Hey to you         
->do you see me   
->hello
+>Hello for the first time!
+>Dependencies resolved.
+Nothing to do.
+Complete!
+>>>See you on the other side
+>[appuser@broker ~]$ 
 ```
-
-
 
 4. To consume the messages, I will open second terminal and use ```kafka-console-consumer``` command:
 
 ```
-[appuser@broker ~]$ kafka-console-consumer --bootstrap-server localhost:9092 --topic hithere --from-beginning
-Hey to you 
-do you see me
-hello
-^CProcessed a total of 3 messages
-[appuser@broker ~]$ 
-
+[appuser@broker kafka]$ kafka-console-consumer --bootstrap-server localhost:9092 --topic hithere --from-beginning
+Hello for the first time!
+Dependencies resolved.
+Nothing to do.
+Complete!
+See you on the other side
+^CProcessed a total of 5 messages
+[appuser@broker kafka]$ 
 ```
 
-5. Lastly, I will remove all messages from the topic. As mentioned in the task description, I tested two methods for this: deleting the topic entirely and adjusting the ```retention.ms``` setting. For this, I used both approaches to ensure all messages were removed, depending on the requirements of the task.
+5. Lastly, I will remove all messages from the topic. As mentioned in the task description, I tested both approaches for this: deleting the topic entirely and adjusting the ```retention.ms``` setting. 
 
+To remove all messages from the _hithere_ topic, I can delete the topic and then recreate it if necessary. First, I will delete the topic:
+
+```
+[appuser@broker ~]$ kafka-topics --bootstrap-server :9092 --delete --topic hithere
+```
+
+To confirm the deletion, I will list the topics again:
+
+```
+[appuser@broker ~]$ kafka-topics --bootstrap-server :9092 --list | grep hithere
+[appuser@broker ~]$ 
+```
+
+If necessary, I can recreate the topic using the same command as before:
+
+```
+[appuser@broker ~]$ kafka-topics --bootstrap-server :9092 --create --partitions 1 --topic hithere 
+Created topic hithere.
+```
+
+Alternatively, I will configure ```retention.ms``` setting to automatically delete messages after a certain retention period. By default, Kafka retains messages in a topic based on the configured retention time.
+
+To configure this, I am using the following command:
+
+```
+[appuser@broker ~]$ kafka-configs --bootstrap-server :9092 --topic hithere --alter --add-config retention.ms=10000
+Completed updating config for topic hithere.
+[appuser@broker ~]$ kafka-console-producer --bootstrap-server :9092 --topic hithere
+>hey again
+```
+
+To confirm the change, I can list the topic’s configuration and check messages as a consumer after 10s:
+
+```
+>[appuser@broker ~]$kafka-topics --describe --topic hithere --bootstrap-server localhost:9092 
+Topic: hithere	TopicId: T01TWMTOSrWj93PV8tACuw	PartitionCount: 1	ReplicationFactor: 1	Configs: retention.ms=10000
+	Topic: hithere	Partition: 0	Leader: 1	Replicas: 1	Isr: 1Elr: 	LastKnownElr: 
+[appuser@broker ~]$
+appuser@broker kafka]$ kafka-console-consumer --bootstrap-server :9092 --topic hithere --from-beginning
+hey again
+^CProcessed a total of 1 messages
+[appuser@broker kafka]$ kafka-console-consumer --bootstrap-server :9092 --topic hithere --from-beginning
+^CProcessed a total of 0 messages
+[appuser@broker kafka]$ 
+```
+
+After setting the retention period, any messages in the topic will be removed according to the new retention policy.
