@@ -10,11 +10,11 @@ In this task, I will install Confluent Platform with Docker, verify it is workin
 4. Consume those messages from the topic
 5. Remove all the messages from the topic
 
-## Workflow 
+## Procedure 
 
-For this activity, I am using my home lab with CentOS Stream 9 running on VirtualBox. As a pre-requisite, I've installed Docker on the machine.  
+For this activity, I am using my home lab, which runs CentOS Stream 9 on VirtualBox. As a prerequisite, Docker has already been installed on the machine.  
 
-1. As a first step, I've downloaded docker compose file and started Confluen Platform as shown below:
+1. Download the Docker Compose file and start Confluent Platform:
 
 ```
 # wget https://raw.githubusercontent.com/confluentinc/cp-all-in-one/7.8.0-post/cp-all-in-one-kraft/docker-compose.yml
@@ -46,4 +46,51 @@ rest-proxy        confluentinc/cp-kafka-rest:7.8.0                  "/etc/conflu
 schema-registry   confluentinc/cp-schema-registry:7.8.0             "/etc/confluent/dock…"   schema-registry   About a minute ago   Up About a minute   0.0.0.0:8081->8081/tcp, :::8081->8081/tcp
 ```
 
-2. 
+2. Initially, I created two topics using the Confluent Control Center web-based UI. However, I later shifted my focus to using the CLI for topic creation. Below, I will describe the workflow used to accomplish this.
+
+First, I will enter the Kafka broker container to interact with it:
+
+```
+# docker exec -it broker bash
+```
+
+Once inside the container, I will use the ```kafka-topics``` command to create a new topic named _hithere_:
+
+```
+[appuser@broker ~]$ kafka-topics --bootstrap-server :9092 --create  --partitions 1 --topic hithere
+Created topic hithere.
+```
+
+To confirm the topic creation, I will list all available topics:
+
+```
+[appuser@broker ~]$ kafka-topics --bootstrap-server :9092 --list
+...output omitted...
+hithere
+```
+
+3. To produce messages to the _hithere_ topic, I will use the ```kafka-console-producer``` command:
+
+```
+[appuser@broker ~]$ kafka-console-producer --bootstrap-server :9092 --topic hithere
+>Hey to you         
+>do you see me   
+>hello
+```
+
+
+
+4. To consume the messages, I will open second terminal and use ```kafka-console-consumer``` command:
+
+```
+[appuser@broker ~]$ kafka-console-consumer --bootstrap-server localhost:9092 --topic hithere --from-beginning
+Hey to you 
+do you see me
+hello
+^CProcessed a total of 3 messages
+[appuser@broker ~]$ 
+
+```
+
+5. Lastly, I will remove all messages from the topic. As mentioned in the task description, I tested two methods for this: deleting the topic entirely and adjusting the ```retention.ms``` setting. For this, I used both approaches to ensure all messages were removed, depending on the requirements of the task.
+
