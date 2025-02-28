@@ -37,9 +37,9 @@ producer = Producer(conf)
 # Callback function to handle delivery report (success or failure)
 def delivery_report(err, msg):
     if err is not None:
-        print("Message delivery failed: {err}")
+        print(f"Message delivery failed: {err}")
     else:
-        print("Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
+        print(f"Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
 
 # Path to the CSV file 
 csv_file_path = 'application_record.csv'
@@ -115,6 +115,32 @@ kafka-console-consumer --bootstrap-server :9092 --topic credit_card_topic --from
 ^CProcessed a total of 40 messages
 ```
 
-2. 
+2. Now that we have produced some messages with duplicates, we will proceed to deduplicate the messages.
+
+As per recommendations, I tried to figure out deduplication mechanism with help of ksqlDB. 
+
+I used following command to access the ksqlDB CLI to interact with Kafka topic:
+
+```
+# docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+                  
+                  ===========================================
+                  =       _              _ ____  ____       =
+                  =      | | _____  __ _| |  _ \| __ )      =
+                  =      | |/ / __|/ _` | | | | |  _ \      =
+                  =      |   <\__ \ (_| | | |_| | |_) |     =
+                  =      |_|\_\___/\__, |_|____/|____/      =
+                  =                   |_|                   =
+                  =        The Database purpose-built       =
+                  =        for stream processing apps       =
+                  ===========================================
+
+Copyright 2017-2022 Confluent Inc.
+
+CLI v7.8.0, Server v7.8.0 located at http://ksqldb-server:8088
+Server Status: RUNNING
+```
+
+
 
 
