@@ -90,9 +90,30 @@ print("Finished producing messages.")
 CSV file is already placed in homedir. Now, I am going to run python code to read the first 20 rows of the CSV file and send each row twice to the credit_card_topic, ensuring there are duplicate messages for testing deduplication.
 
 ```
-
+[student@fundos ~]$ python credit_producer_test.py 
+Message delivered to credit_card_topic [0] at offset 0
+Message delivered to credit_card_topic [0] at offset 1
+Message delivered to credit_card_topic [0] at offset 2
+Message delivered to credit_card_topic [0] at offset 3
+...output omitted...
+Message delivered to credit_card_topic [0] at offset 38
+Message delivered to credit_card_topic [0] at offset 39
+Finished producing messages.
 ```
 
+We can validate with ```kafka-console-consumer``` command:
+
+```
+kafka-console-consumer --bootstrap-server :9092 --topic credit_card_topic --from-beginning --property print.key=true
+5008804	{"CODE_GENDER": "M", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "Y", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "427500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Higher education", "NAME_FAMILY_STATUS": "Civil marriage", "NAME_HOUSING_TYPE": "Rented apartment", "DAYS_BIRTH": "-12005", "DAYS_EMPLOYED": "-4542", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "1", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "", "CNT_FAM_MEMBERS": "2.0"}
+5008804	{"CODE_GENDER": "M", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "Y", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "427500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Higher education", "NAME_FAMILY_STATUS": "Civil marriage", "NAME_HOUSING_TYPE": "Rented apartment", "DAYS_BIRTH": "-12005", "DAYS_EMPLOYED": "-4542", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "1", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "", "CNT_FAM_MEMBERS": "2.0"}
+5008805	{"CODE_GENDER": "M", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "Y", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "427500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Higher education", "NAME_FAMILY_STATUS": "Civil marriage", "NAME_HOUSING_TYPE": "Rented apartment", "DAYS_BIRTH": "-12005", "DAYS_EMPLOYED": "-4542", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "1", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "", "CNT_FAM_MEMBERS": "2.0"}
+5008805	{"CODE_GENDER": "M", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "Y", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "427500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Higher education", "NAME_FAMILY_STATUS": "Civil marriage", "NAME_HOUSING_TYPE": "Rented apartment", "DAYS_BIRTH": "-12005", "DAYS_EMPLOYED": "-4542", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "1", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "", "CNT_FAM_MEMBERS": "2.0"}
+...output omitted...
+5008825	{"CODE_GENDER": "F", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "N", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "130500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Incomplete higher", "NAME_FAMILY_STATUS": "Married", "NAME_HOUSING_TYPE": "House / apartment", "DAYS_BIRTH": "-10669", "DAYS_EMPLOYED": "-1103", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "0", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "Accountants", "CNT_FAM_MEMBERS": "2.0"}
+5008825	{"CODE_GENDER": "F", "FLAG_OWN_CAR": "Y", "FLAG_OWN_REALTY": "N", "CNT_CHILDREN": "0", "AMT_INCOME_TOTAL": "130500.0", "NAME_INCOME_TYPE": "Working", "NAME_EDUCATION_TYPE": "Incomplete higher", "NAME_FAMILY_STATUS": "Married", "NAME_HOUSING_TYPE": "House / apartment", "DAYS_BIRTH": "-10669", "DAYS_EMPLOYED": "-1103", "FLAG_MOBIL": "1", "FLAG_WORK_PHONE": "0", "FLAG_PHONE": "0", "FLAG_EMAIL": "0", "OCCUPATION_TYPE": "Accountants", "CNT_FAM_MEMBERS": "2.0"}
+^CProcessed a total of 40 messages
+```
 
 2. 
 
