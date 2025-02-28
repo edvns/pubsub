@@ -141,6 +141,123 @@ CLI v7.8.0, Server v7.8.0 located at http://ksqldb-server:8088
 Server Status: RUNNING
 ```
 
+Next, I've created an input stream based on the _credit_card_topic_:
 
+```
+ksql> CREATE STREAM cc_stream (
+>  ID VARCHAR KEY,
+>  CODE_GENDER VARCHAR,
+>  FLAG_OWN_CAR VARCHAR,
+>  FLAG_OWN_REALTY VARCHAR,
+>  CNT_CHILDREN VARCHAR,
+>  AMT_INCOME_TOTAL VARCHAR,
+>  NAME_INCOME_TYPE VARCHAR,
+>  NAME_EDUCATION_TYPE VARCHAR,
+>  NAME_FAMILY_STATUS VARCHAR,
+>  NAME_HOUSING_TYPE VARCHAR,
+>  DAYS_BIRTH VARCHAR,
+>  DAYS_EMPLOYED VARCHAR,
+>  FLAG_MOBIL VARCHAR,
+>  FLAG_WORK_PHONE VARCHAR,
+>  FLAG_PHONE VARCHAR,
+>  FLAG_EMAIL VARCHAR,
+>  OCCUPATION_TYPE VARCHAR,
+>  CNT_FAM_MEMBERS VARCHAR
+>) WITH (
+>  KAFKA_TOPIC='credit_card_topic',
+>  VALUE_FORMAT='JSON',
+>  PARTITIONS=1
+>);
 
+ Message        
+----------------
+ Stream created 
+----------------
+```
+
+Followed by deduplication/filtering table:
+
+```
+ksql> CREATE TABLE dedup_cc_table AS
+>SELECT ID,
+>       LATEST_BY_OFFSET(CODE_GENDER) AS CODE_GENDER,
+>       LATEST_BY_OFFSET(FLAG_OWN_CAR) AS FLAG_OWN_CAR,
+>       LATEST_BY_OFFSET(FLAG_OWN_REALTY) AS FLAG_OWN_REALTY,
+>       LATEST_BY_OFFSET(CNT_CHILDREN) AS CNT_CHILDREN,
+>       LATEST_BY_OFFSET(AMT_INCOME_TOTAL) AS AMT_INCOME_TOTAL,
+>       LATEST_BY_OFFSET(NAME_INCOME_TYPE) AS NAME_INCOME_TYPE,
+>       LATEST_BY_OFFSET(NAME_EDUCATION_TYPE) AS NAME_EDUCATION_TYPE,
+>       LATEST_BY_OFFSET(NAME_FAMILY_STATUS) AS NAME_FAMILY_STATUS,
+>       LATEST_BY_OFFSET(NAME_HOUSING_TYPE) AS NAME_HOUSING_TYPE,
+>       LATEST_BY_OFFSET(DAYS_BIRTH) AS DAYS_BIRTH,
+>       LATEST_BY_OFFSET(DAYS_EMPLOYED) AS DAYS_EMPLOYED,
+>       LATEST_BY_OFFSET(FLAG_MOBIL) AS FLAG_MOBIL,
+>       LATEST_BY_OFFSET(FLAG_WORK_PHONE) AS FLAG_WORK_PHONE,
+>       LATEST_BY_OFFSET(FLAG_PHONE) AS FLAG_PHONE,
+>       LATEST_BY_OFFSET(FLAG_EMAIL) AS FLAG_EMAIL,
+>       LATEST_BY_OFFSET(OCCUPATION_TYPE) AS OCCUPATION_TYPE,
+>       LATEST_BY_OFFSET(CNT_FAM_MEMBERS) AS CNT_FAM_MEMBERS
+>FROM cc_stream
+>GROUP BY ID;
+
+ Message                                      
+----------------------------------------------
+ Created query with ID CTAS_DEDUP_CC_TABLE_89 
+----------------------------------------------
+ksql> show tables;
+
+ Table Name     | Kafka Topic    | Key Format | Value Format | Windowed 
+------------------------------------------------------------------------
+ DEDUP_CC_TABLE | DEDUP_CC_TABLE | KAFKA      | JSON         | false    
+------------------------------------------------------------------------
+ksql> 
+```
+
+New topic associated to the _dedup_cc_table_ was also created. However, when consuming messages from the this topic, results did not meet task criteria - it still had duplicated messages.
+
+```
+kafka-console-consumer --bootstrap-server :9092 --topic DEDUP_CC_TABLE --from-beginning --property print.key=true
+5008804	{"CODE_GENDER":"M","FLAG_OWN_CAR":"Y","FLAG_OWN_REALTY":"Y","CNT_CHILDREN":"0","AMT_INCOME_TOTAL":"427500.0","NAME_INCOME_TYPE":"Working","NAME_EDUCATION_TYPE":"Higher education","NAME_FAMILY_STATUS":"Civil marriage","NAME_HOUSING_TYPE":"Rented apartment","DAYS_BIRTH":"-12005","DAYS_EMPLOYED":"-4542","FLAG_MOBIL":"1","FLAG_WORK_PHONE":"1","FLAG_PHONE":"0","FLAG_EMAIL":"0","OCCUPATION_TYPE":"","CNT_FAM_MEMBERS":"2.0"}
+5008804	{"CODE_GENDER":"M","FLAG_OWN_CAR":"Y","FLAG_OWN_REALTY":"Y","CNT_CHILDREN":"0","AMT_INCOME_TOTAL":"427500.0","NAME_INCOME_TYPE":"Working","NAME_EDUCATION_TYPE":"Higher education","NAME_FAMILY_STATUS":"Civil marriage","NAME_HOUSING_TYPE":"Rented apartment","DAYS_BIRTH":"-12005","DAYS_EMPLOYED":"-4542","FLAG_MOBIL":"1","FLAG_WORK_PHONE":"1","FLAG_PHONE":"0","FLAG_EMAIL":"0","OCCUPATION_TYPE":"","CNT_FAM_MEMBERS":"2.0"}
+...output omitted...
+^CProcessed a total of 40 messages
+```
+
+When I made a query to the table - we've got expected result:
+
+```
+ksql> select * FROM DEDUP_CC_TABLE;
++------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+
+|ID    |CODE_G|FLAG_O|FLAG_O|CNT_CH|AMT_IN|NAME_I|NAME_E|NAME_F|NAME_H|DAYS_B|DAYS_E|FLAG_M|FLAG_W|FLAG_P|FLAG_E|OCCUPA|CNT_FA|
+|      |ENDER |WN_CAR|WN_REA|ILDREN|COME_T|NCOME_|DUCATI|AMILY_|OUSING|IRTH  |MPLOYE|OBIL  |ORK_PH|HONE  |MAIL  |TION_T|M_MEMB|
+|      |      |      |LTY   |      |OTAL  |TYPE  |ON_TYP|STATUS|_TYPE |      |D     |      |ONE   |      |      |YPE   |ERS   |
+|      |      |      |      |      |      |      |E     |      |      |      |      |      |      |      |      |      |      |
++------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+------+
+|500880|M     |Y     |Y     |0     |427500|Workin|Higher|Civil |Rented|-12005|-4542 |1     |1     |0     |0     |      |2.0   |
+|4     |      |      |      |      |.0    |g     | educa|marria| apart|      |      |      |      |      |      |      |      |
+|      |      |      |      |      |      |      |tion  |ge    |ment  |      |      |      |      |      |      |      |      |
+|500880|M     |Y     |Y     |0     |427500|Workin|Higher|Civil |Rented|-12005|-4542 |1     |1     |0     |0     |      |2.0   |
+|5     |      |      |      |      |.0    |g     | educa|marria| apart|      |      |      |      |      |      |      |      |
+|      |      |      |      |      |      |      |tion  |ge    |ment  |      |      |      |      |      |      |      |      |
+|500880|M     |Y     |Y     |0     |112500|Workin|Second|Marrie|House |-21474|-1134 |1     |0     |0     |0     |Securi|2.0   |
+|6     |      |      |      |      |.0    |g     |ary / |d     |/ apar|      |      |      |      |      |      |ty sta|      |
+|      |      |      |      |      |      |      |second|      |tment |      |      |      |      |      |      |ff    |      |
+|      |      |      |      |      |      |      |ary sp|      |      |      |      |      |      |      |      |      |      |
+|      |      |      |      |      |      |      |ecial |      |      |      |      |      |      |      |      |      |      |
+|500880|F     |N     |Y     |0     |270000|Commer|Second|Single|House |-19110|-3051 |1     |0     |1     |1     |Sales |1.0   |
+|8     |      |      |      |      |.0    |cial a|ary / | / not|/ apar|      |      |      |      |      |      |staff |      |
+|      |      |      |      |      |      |ssocia|second| marri|tment |      |      |      |      |      |      |      |      |
+|      |      |      |      |      |      |te    |ary sp|ed    |      |      |      |      |      |      |      |      |      |
+|      |      |      |      |      |      |      |ecial |      |      |      |      |      |      |      |      |      |      |
+...output omitted...
+|511295|M     |Y     |Y     |0     |270000|Workin|Higher|Marrie|House |-16872|-769  |1     |1     |1     |1     |Accoun|2.0   |
+|6     |      |      |      |      |.0    |g     | educa|d     |/ apar|      |      |      |      |      |      |tants |      |
+|      |      |      |      |      |      |      |tion  |      |tment |      |      |      |      |      |      |      |      |
+|615365|M     |Y     |Y     |0     |270000|Workin|Higher|Marrie|House |-16872|-769  |1     |1     |1     |1     |Accoun|2.0   |
+|1     |      |      |      |      |.0    |g     | educa|d     |/ apar|      |      |      |      |      |      |tants |      |
+|      |      |      |      |      |      |      |tion  |      |tment |      |      |      |      |      |      |      |      |
+Query terminated
+```
+
+In the end, after trying-testing multiple options with streams/tables, I could not figure out correct method to produce deduplicated data into new topic yet.
 
