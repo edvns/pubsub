@@ -213,7 +213,7 @@ ksql> show tables;
 ksql> 
 ```
 
-New topic associated to the _dedup_cc_table_ was also created. However, when consuming messages from the this topic, results did not meet task criteria - it still had duplicated messages.
+New topic associated to the _dedup_cc_table_ was also created. However, when consuming messages from the _DEDUP_CC_TABLE_ topic, results did not meet task criteria - it still had duplicated messages.
 
 ```
 kafka-console-consumer --bootstrap-server :9092 --topic DEDUP_CC_TABLE --from-beginning --property print.key=true
@@ -260,4 +260,7 @@ Query terminated
 ```
 
 In the end, after trying-testing multiple options with streams/tables, I could not figure out correct method to produce deduplicated data into new topic yet.
+
+#### Thank you for your time reviewing these tasks, feel free to post comments/questions/suggestions. 
+Regards
 
